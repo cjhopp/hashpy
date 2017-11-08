@@ -10,7 +10,9 @@ using Python and HASH
 
 """
 
-__all__ = ['util', 'tests', 'scripts', 'plotting', 'io']
+
+__all__ = ['util', 'tests', 'scripts', 'plotting', 'io', 'libhashpy',
+           'hashpype', 'doublecouple']
 
 __version__ = "0.5.6"
 

@@ -48,7 +48,8 @@ class FocalMechPlotter(object):
     source = None   # temp string of where to save
     
     picks_list = ('undecidable', 'positive', 'negative')
-    wf_color = { 'positive' : 'red', 'negative' : 'blue', 'undecidable' : 'black' }
+    wf_color = { 'positive' : 'red', 'negative' : 'blue',
+                 'undecidable' : 'black' }
     
     @property
     def _fm_index(self):
@@ -110,7 +111,7 @@ class FocalMechPlotter(object):
                        'markeredgewidth' : 2,
                        }
         for ind, a in enumerate(self._orig.arrivals):
-            p = a.pick_id.getReferredObject()
+            p = a.pick_id.get_referred_object()
             # Calculate strike azi from direct (dip-pointing) azi 
             azi = a.azimuth - 90.
             #--- HASH takeoffs are 0-180 from vertical UP!!

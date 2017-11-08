@@ -16,7 +16,7 @@ def _get_pick(arrival, picks, pick_ids):
     Return the associated pick of an arrival, even if not set as referred object
     """
     pid = arrival.pick_id
-    pick = pid.getReferredObject()
+    pick = pid.get_referred_object()
     if pick is None:
         try:
             n = pick_ids.index(pid)
@@ -83,8 +83,7 @@ def inputOBSPY(hp, event):
         hp.sname[k] = pick.waveform_id.station_code
         hp.snet[k]  = pick.waveform_id.network_code
         hp.scomp[k] = pick.waveform_id.channel_code
-        hp.arid[k]  = pick.creation_info.version
-        
+
         hp.qazi[k] = arrv.azimuth
         hp.dist[k] = arrv.distance * 111.2
         
@@ -155,16 +154,12 @@ def outputOBSPY(hp, event=None, only_fm_picks=False):
         origin.resource_id = ResourceIdentifier('smi:hash/Origin/{0}'.format(hp.icusp))
         for _i in range(n):
             p = Pick()
-            p.creation_info = CreationInfo(version=hp.arid[_i])
-            p.resource_id = ResourceIdentifier('smi:hash/Pick/{0}'.format(p.creation_info.version))
             p.waveform_id = WaveformStreamID(network_code=hp.snet[_i], station_code=hp.sname[_i], channel_code=hp.scomp[_i])
             if hp.p_pol[_i] > 0:
                 p.polarity = 'positive'
             else:
                 p.polarity = 'negative'
             a = Arrival()
-            a.creation_info = CreationInfo(version=hp.arid[_i])
-            a.resource_id = ResourceIdentifier('smi:hash/Arrival/{0}'.format(p.creation_info.version))
             a.azimuth = hp.p_azi_mc[_i,0]
             a.takeoff_angle = 180. - hp.p_the_mc[_i,0]
             a.pick_id = p.resource_id
@@ -179,7 +174,7 @@ def outputOBSPY(hp, event=None, only_fm_picks=False):
         for _i in range(n):
             ind = hp.p_index[_i]
             a = origin.arrivals[ind]
-            p = a.pick_id.getReferredObject()
+            p = a.pick_id.get_referred_object()
             a.takeoff_angle = 180. - hp.p_the_mc[_i,0]
             picks.append(p)
             arrivals.append(a)
