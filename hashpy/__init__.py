@@ -10,8 +10,7 @@ using Python and HASH
 
 """
 
-from .hashpype import HashPype, HashError
-from .doublecouple import DoubleCouple
+__all__ = ['util', 'tests', 'scripts', 'plotting', 'io']
 
 __version__ = "0.5.6"
 

@@ -1,3 +1,3 @@
 #
-from focalmechplotter import FocalMechPlotter
+__all__ = ['focalmechplotter']
 
