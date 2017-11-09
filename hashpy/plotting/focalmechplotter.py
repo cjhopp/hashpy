@@ -70,7 +70,84 @@ class FocalMechPlotter(object):
     def _pick(self):
         '''Pick pointed to by current arrival'''
         return self._arrv.pick_id.getReferredObject()
-        
+
+    def __init__(self, event=None, save=None):
+        """
+        Create a plot for focal mechanisms
+
+        Input
+        -----
+        event : obspy.core.event.Event containing
+            FocalMechanism
+            Picks
+            Origin/Arrivals
+
+        save : function handle, the instance is passed as 1st arg
+               "save(self)", called on save button press
+
+        """
+        self.event = event
+        self.ax = []
+        self._axis = {}
+        self.save = save
+        self.gs = GridSpec(8, 5)  # 8x5 grid of axis space
+        self.gs_slice = self.gs[:, 1:]
+
+        # Hijack buttons
+        # -------------------------------------------------------------------#
+        # Make forward plot next solution
+        forward = NavigationToolbar2.forward
+
+        def next_fm(navtb, *args, **kwargs):
+            m = self._fm_index
+            n = self._num_fms
+            if m < n - 1:
+                self.plot(solution=m + 1)
+            forward(navtb, *args, **kwargs)
+
+        NavigationToolbar2.forward = next_fm
+
+        # Make back plot previous solution
+        back = NavigationToolbar2.back
+
+        def prev_fm(navtb, *args, **kwargs):
+            m = self._fm_index
+            if m > 0:
+                self.plot(solution=m - 1)
+            back(navtb, *args, **kwargs)
+
+        NavigationToolbar2.back = prev_fm
+
+        # Make home plot preferred solution
+        home = NavigationToolbar2.home
+
+        def pref_fm(navtb, *args, **kwargs):
+            self.plot()
+            home(navtb, *args, **kwargs)
+
+        NavigationToolbar2.home = pref_fm
+
+        # Take a 'save' function passed on creation and try to call it
+        if self.save:
+            savefig = NavigationToolbar2TkAgg.save_figure
+
+            def save_fm(navtb, *args, **kwargs):
+                try:
+                    navtb.set_message("Saving...")
+                    self.save(self)
+                    navtb.set_message("DONE")
+                except Exception as e:
+                    navtb.set_message("FAILED:{0}".format(e.message))
+
+            NavigationToolbar2TkAgg.save_figure = save_fm
+        # -------------------------------------------------------------------#
+
+        # Draw figure
+        self.fig = plt.figure(facecolor='#D9D9EE')
+        self.plot()
+
+        plt.show()
+
     def plot_on_stereonet(self, axis=None, fm=None):
         '''Plot first motions from an Event instance
         
@@ -88,7 +165,8 @@ class FocalMechPlotter(object):
             self.focm = self.event.focal_mechanisms[fm]
         
         ax.clear() 
-        ax.set_title('Origin: {0}'.format(self._orig.creation_info.version))
+        ax.set_title('Event: {0}'.format(
+            str(self.event.resource_id)).split('/')[-1])
         tlab  = ax.set_azimuth_ticklabels([])
         
         h = []
@@ -123,17 +201,21 @@ class FocalMechPlotter(object):
             elif 90. <= a.takeoff_angle <= 180.:
                 toa = 270. - a.takeoff_angle  # project upward angles
             else:
-                raise ValueError("Takeoff angle ({0}) must be in [0, 180]".format(a.azimuth))
+                raise ValueError(
+                    "Takeoff angle ({0}) must be in [0, 180]".format(a.azimuth))
             
             if p.polarity is 'positive':
-                #plot_specs.update({'markeredgecolor' : 'black', 'markerfacecolor' : 'red'   })
-                h += ax.rake(azi, toa, 90, 'o', markeredgecolor='black', markerfacecolor='red', **plot_specs)
+                h += ax.rake(azi, toa, 90, 'o', markeredgecolor='black',
+                             markerfacecolor='red', **plot_specs)
             if p.polarity is 'negative':
-                #plot_specs.update({'markeredgecolor' : 'blue', 'markerfacecolor' : 'white' })
-                h += ax.rake(azi, toa, 90, 'o', markeredgecolor='blue', markerfacecolor='white', **plot_specs)
+                h += ax.rake(azi, toa, 90, 'o', markeredgecolor='blue',
+                             markerfacecolor='white', **plot_specs)
             index.append(ind)
             if True:
-                h_text = ax.rake(azi, toa+5, 90, marker='$   {0}$'.format(p.waveform_id.station_code), color='black',markersize=20)
+                h_text = ax.rake(azi, toa+5, 90,
+                                 marker='$   {0}$'.format(
+                                     p.waveform_id.station_code),
+                                 color='black',markersize=20)
         
         for comm in self.focm.comments:
             if 'quality' in str(comm.resource_id):
@@ -141,8 +223,14 @@ class FocalMechPlotter(object):
             else:
                 qual = None
         plane_str = "STRIKE1:{0: > 7.1f}\nDIP1:{1: > 7.1f}\nRAKE1:{2: > 7.1f}\n\nSTRIKE2:{3: > 7.1f}\nDIP2:{4: > 7.1f}\nRAKE2:{5: > 7.1f}"
-        h_text = self.fig.text(0.25, 0.88, plane_str.format(strike1, dip1, rake1, strike2, dip2, rake2), ha='right', va='top', family='monospace')
-        h_text = self.fig.text(0.25, 0.11, 'Quality:  {0}\n# of picks: {1}'.format(qual, len(self._orig.arrivals)), ha='right', va='top', family='monospace')  
+        h_text = self.fig.text(0.25, 0.88, plane_str.format(strike1, dip1,
+                                                            rake1, strike2,
+                                                            dip2, rake2),
+                               ha='right', va='top', family='monospace')
+        h_text = self.fig.text(
+            0.25, 0.11, 'Quality:  {0}\n# of picks: {1}'.format(
+                qual, len(self._orig.arrivals)), ha='right', va='top',
+            family='monospace')
         
         if not axis:
             self.h = h
@@ -166,75 +254,3 @@ class FocalMechPlotter(object):
         self.draw_stereonet_axis()
         self.plot_on_stereonet(fm=solution)
         plt.draw()
-
-    def __init__(self, event=None, save=None):
-        """
-        Create a plot for focal mechanisms
-
-        Input
-        -----
-        event : obspy.core.event.Event containing 
-            FocalMechanism
-            Picks
-            Origin/Arrivals
-
-        save : function handle, the instance is passed as 1st arg
-               "save(self)", called on save button press
-
-        """
-        self.event = event
-        self.ax = []
-        self._axis = {}
-        self.save = save
-        self.gs = GridSpec(8,5) # 8x5 grid of axis space
-        self.gs_slice = self.gs[:,1:]
-        
-        # Hijack buttons
-        # -------------------------------------------------------------------#
-        # Make forward plot next solution
-        forward = NavigationToolbar2.forward
-        def next_fm(navtb, *args, **kwargs):
-            m = self._fm_index
-            n = self._num_fms
-            if m < n-1:
-                self.plot(solution=m+1)
-            forward(navtb, *args, **kwargs)
-        NavigationToolbar2.forward = next_fm
-        
-        # Make back plot previous solution
-        back = NavigationToolbar2.back
-        def prev_fm(navtb, *args, **kwargs):
-            m = self._fm_index
-            if m > 0:
-                self.plot(solution=m-1)
-            back(navtb, *args, **kwargs)
-        NavigationToolbar2.back = prev_fm
-        
-        # Make home plot preferred solution
-        home = NavigationToolbar2.home
-        def pref_fm(navtb, *args, **kwargs):
-            self.plot()
-            home(navtb, *args, **kwargs)
-        NavigationToolbar2.home = pref_fm
-        
-        # Take a 'save' function passed on creation and try to call it
-        if self.save:
-            savefig = NavigationToolbar2TkAgg.save_figure
-            def save_fm(navtb, *args, **kwargs):
-                try:
-                    navtb.set_message("Saving...")
-                    self.save(self)
-                    navtb.set_message("DONE")
-                except Exception as e:
-                    navtb.set_message("FAILED:{0}".format(e.message))
-                    
-            NavigationToolbar2TkAgg.save_figure = save_fm
-        # -------------------------------------------------------------------#
-
-        # Draw figure
-        self.fig = plt.figure(facecolor='#D9D9EE')
-        self.plot()
-        
-        
-        plt.show()
-    

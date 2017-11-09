@@ -53,7 +53,7 @@ def inputOBSPY(hp, event):
     hp.qlat   = _o.latitude
     hp.qlon   = _o.longitude
     hp.qdep   = _o.depth / 1000.
-    hp.icusp  = _o.creation_info.version
+    hp.icusp  = str(event.resource_id).split('/')[-1]
     
     # Try to get valid hoizontal/vertical errors.
     if _uncert.horizontal_uncertainty:
@@ -67,7 +67,7 @@ def inputOBSPY(hp, event):
     hp.sez = _o.depth_errors.get('uncertainty', DEFAULT_UNCERT) / 1000.
 
     if _m:
-	    hp.qmag = _m.mag
+        hp.qmag = _m.mag
     
     # The index 'k' is deliberately non-Pythonic to deal with the fortran
     # subroutines which need to be called and the structure of the original HASH code.
@@ -144,13 +144,15 @@ def outputOBSPY(hp, event=None, only_fm_picks=False):
     # Returns new (or updates existing) Event with HASH solution
     n = hp.npol
     if event is None:
-        event = Event(focal_mechanisms=[], picks=[], origins=[])
+        event = Event(focal_mechanisms=[], picks=[], origins=[],
+                      resource_id=ResourceIdentifier(
+                          'smi:hash/{}'.format(hp.icusp)))
         origin = Origin(arrivals=[])
         origin.time = UTCDateTime(hp.tstamp)
         origin.latitude = hp.qlat
         origin.longitude = hp.qlon
         origin.depth = hp.qdep * 1000.
-        origin.creation_info = CreationInfo(version=hp.icusp)
+        # origin.creation_info = CreationInfo(version=hp.icusp)
         origin.resource_id = ResourceIdentifier('smi:hash/Origin/{0}'.format(hp.icusp))
         for _i in range(n):
             p = Pick()
