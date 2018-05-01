@@ -103,7 +103,7 @@ def inputOBSPY_COMPOSITE(hp, catalog):
             for nm in range(1, hp.nmc):
                 val = ran_norm()
                 # randomly perturbed source depth
-                t_depth = abs(_o.depth + hp.sez * val)
+                t_depth = abs((_o.depth / 1000.) + hp.sez * val)
                 # index used to choose velocity model
                 hp.index[nm] = (nm % hp.ntab) + 1
                 hp.p_azi_mc[k, nm] = hp.qazi[k]
