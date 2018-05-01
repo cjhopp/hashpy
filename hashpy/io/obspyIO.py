@@ -42,6 +42,7 @@ def inputOBSPY_CONSENSUS(hp, catalog):
     k = 0
     hp.p_index = []
     _m = catalog[0].preferred_magnitude() # Just take the first one
+    icusp = 'Consensus'
     _pids = [p.resource_id for event in catalog for p in event.picks]
     hp.tstamp = catalog[0].preferred_origin().time.timestamp
     hp.qlat = np.median([ev.preferred_origin().latitude
