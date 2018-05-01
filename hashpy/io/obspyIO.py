@@ -43,15 +43,14 @@ def inputOBSPY_COMPOSITE(hp, catalog):
     k = 0
     hp.p_index = []
     _m = catalog[0].preferred_magnitude() # Just take the first one
-    icusp = 'Consensus'
-    _pids = [p.resource_id for event in catalog for p in event.picks]
+    icusp = 'Composite'
     hp.tstamp = catalog[0].preferred_origin().time.timestamp
-    hp.qlat = np.median([ev.preferred_origin().latitude
-                         for ev in catalog])
-    hp.qlon = np.median([ev.preferred_origin().longitude
-                         for ev in catalog])
-    hp.qdep = np.median([ev.preferred_origin().depth
-                         for ev in catalog]) / 1000.
+    # hp.qlat = np.median([ev.preferred_origin().latitude
+    #                      for ev in catalog])
+    # hp.qlon = np.median([ev.preferred_origin().longitude
+    #                      for ev in catalog])
+    # hp.qdep = np.median([ev.preferred_origin().depth
+    #                      for ev in catalog]) / 1000.
     hp.icusp = icusp
     hp.seh = DEFAULT_UNCERT
     hp.seh /= 1000.
@@ -60,6 +59,7 @@ def inputOBSPY_COMPOSITE(hp, catalog):
         hp.qmag = _m.mag
     for event in catalog:
         _o = event.preferred_origin()
+        _pids = [p.resource_id for event in catalog for p in event.picks]
         # The index 'k' is deliberately non-Pythonic to deal with the fortran
         # subroutines which need to be called and the structure of the original
         # HASH code.
@@ -67,6 +67,7 @@ def inputOBSPY_COMPOSITE(hp, catalog):
         for _i, arrv in enumerate(_o.arrivals):
             pick = _get_pick(arrv, event.picks, _pids)
             if pick is None:
+                print('No pick for arrival')
                 continue
             try:
                 hp.dist[k] = arrv.distance * 111.2
@@ -102,13 +103,13 @@ def inputOBSPY_COMPOSITE(hp, catalog):
             for nm in range(1, hp.nmc):
                 val = ran_norm()
                 # randomly perturbed source depth
-                hp.qdep2[nm] = abs(hp.qdep + hp.sez * val)
+                t_depth = abs(_o.depth + hp.sez * val)
                 # index used to choose velocity model
                 hp.index[nm] = (nm % hp.ntab) + 1
                 hp.p_azi_mc[k, nm] = hp.qazi[k]
                 hp.p_the_mc[k, nm], iflag = get_tts(hp.index[nm],
-                                                      hp.dist[k],
-                                                      hp.qdep2[nm])
+                                                    hp.dist[k],
+                                                    t_depth)
             # polarity check in original code... doesn't work here
             # hp.p_pol[k] = hp.p_pol[k] * hp.spol
             hp.p_index.append(k)  # indicies of [arrivals] which passed
@@ -134,7 +135,6 @@ def inputOBSPY_CONSENSUS(hp, catalog):
     hp.p_index = []
     _m = catalog[0].preferred_magnitude() # Just take the first one
     icusp = 'Consensus'
-    _pids = [p.resource_id for event in catalog for p in event.picks]
     hp.tstamp = catalog[0].preferred_origin().time.timestamp
     hp.qlat = np.median([ev.preferred_origin().latitude
                          for ev in catalog])
@@ -150,6 +150,7 @@ def inputOBSPY_CONSENSUS(hp, catalog):
         hp.qmag = _m.mag
     for event in catalog:
         _o = event.preferred_origin()
+        _pids = [p.resource_id for event in catalog for p in event.picks]
         # The index 'k' is deliberately non-Pythonic to deal with the fortran
         # subroutines which need to be called and the structure of the original
         # HASH code.
