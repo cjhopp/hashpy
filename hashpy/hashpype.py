@@ -365,9 +365,15 @@ class HashPype(object):
         # find azimuth and takeoff angle for each trial
         for k in range(self.npol):
             for nm in range(self.nmc):
-                self.p_azi_mc[k,nm] = self.qazi[k]
-                self.p_the_mc[k,nm], iflag = get_tts(self.index[nm],self.dist[k],self.qdep2[nm])
-        self.magap, self.mpgap = get_gap(self.p_azi_mc[:self.npol,0],self.p_the_mc[:self.npol,0],self.npol)
+                # TODO Here add an extra loop over each origin for correct
+                # TODO toa calculation across a cluster
+                self.p_azi_mc[k, nm] = self.qazi[k]
+                self.p_the_mc[k, nm], iflag = get_tts(self.index[nm],
+                                                      self.dist[k],
+                                                      self.qdep2[nm])
+        self.magap, self.mpgap = get_gap(self.p_azi_mc[:self.npol, 0],
+                                         self.p_the_mc[:self.npol, 0],
+                                         self.npol)
     
     def view_polarity_data(self):
         """

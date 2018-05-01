@@ -1,6 +1,9 @@
 #
 # HashPype class which uses ObsPy Event as I/O for focal mech data
-# 
+#
+
+import numpy as np
+
 from hashpy.doublecouple import DoubleCouple
 from obspy.core.utcdatetime import UTCDateTime
 from obspy.core.event import (Catalog, Event, Origin, CreationInfo, Magnitude,
@@ -25,6 +28,78 @@ def _get_pick(arrival, picks, pick_ids):
         else:
             return picks[n]
     return pick
+
+
+def inputOBSPY_CONSENSUS(hp, catalog, icusp):
+    """
+    Load an entire catalog into HASH to compute a consensus mechanism
+    which just assumes a median location from the catalog
+    :param hp:
+    :param catalog:
+    :return:
+    """
+    DEFAULT_UNCERT = 100.
+    k = 0
+    hp.p_index = []
+    _m = catalog[0].preferred_magnitude() # Just take the first one
+    _pids = [p.resource_id for event in catalog for p in event.picks]
+    hp.tstamp = catalog[0].preferred_origin().time.timestamp
+    hp.qlat = np.median([ev.preferred_origin().latitude
+                         for ev in catalog])
+    hp.qlon = np.median([ev.preferred_origin().longitude
+                         for ev in catalog])
+    hp.qdep = np.median([ev.preferred_origin().depth
+                         for ev in catalog]) / 1000.
+    hp.icusp = icusp
+    hp.seh = DEFAULT_UNCERT
+    hp.seh /= 1000.
+    hp.sez = np.median([ev.preferred_origin().depth_errors.get('uncertainty',
+                                                               DEFAULT_UNCERT)
+                        for ev in catalog]) / 1000.
+    if _m:
+        hp.qmag = _m.mag
+    for event in catalog:
+        _o = event.preferred_origin()
+        # The index 'k' is deliberately non-Pythonic to deal with the fortran
+        # subroutines which need to be called and the structure of the original
+        # HASH code.
+        # May be able to update with a rewrite... YMMV
+        for _i, arrv in enumerate(_o.arrivals):
+            pick = _get_pick(arrv, event.picks, _pids)
+            if pick is None:
+                continue
+            hp.sname[k] = pick.waveform_id.station_code
+            hp.snet[k] = pick.waveform_id.network_code
+            hp.scomp[k] = pick.waveform_id.channel_code
+            hp.qazi[k] = arrv.azimuth
+            hp.dist[k] = arrv.distance * 111.2
+            # TODO Populate toas and magap, mpgap
+            if (hp.qazi[k] < 0.):
+                hp.qazi[k] += 360.
+            if (hp.dist[k] > hp.delmax):
+                continue
+            if arrv.phase not in 'Pp':
+                continue
+            if (pick.polarity is 'positive'):
+                hp.p_pol[k] = 1
+            elif (pick.polarity is 'negative'):
+                hp.p_pol[k] = -1
+            else:
+                continue
+            if (pick.onset is 'impulsive'):
+                hp.p_qual[k] = 0
+            elif (pick.onset is 'emergent'):
+                hp.p_qual[k] = 1
+            elif (pick.onset is 'questionable'):
+                hp.p_qual[k] = 1
+            else:
+                hp.p_qual[k] = 0
+            # polarity check in original code... doesn't work here
+            # hp.p_pol[k] = hp.p_pol[k] * hp.spol
+            hp.p_index.append(_i)  # indicies of [arrivals] which passed
+            k += 1
+    hp.npol = k  # k is zero indexed in THIS loop
+    return
 
 
 def inputOBSPY(hp, event):
