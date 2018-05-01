@@ -355,7 +355,7 @@ class HashPype(object):
             val = ran_norm()
             self.qdep2[nm] = abs(self.qdep + self.sez * val) # randomly perturbed source depth
             self.index[nm] = (nm % self.ntab) + 1  # index used to choose velocity model
-            
+
     def calculate_takeoff_angles(self):
         """
         Use HASH fortran subroutine to calulate takeoff angles for each trial
@@ -365,8 +365,6 @@ class HashPype(object):
         # find azimuth and takeoff angle for each trial
         for k in range(self.npol):
             for nm in range(self.nmc):
-                # TODO Here add an extra loop over each origin for correct
-                # TODO toa calculation across a cluster
                 self.p_azi_mc[k, nm] = self.qazi[k]
                 self.p_the_mc[k, nm], iflag = get_tts(self.index[nm],
                                                       self.dist[k],

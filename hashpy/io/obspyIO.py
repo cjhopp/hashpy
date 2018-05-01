@@ -4,6 +4,7 @@
 
 import numpy as np
 
+from hashpy.libhashpy import (ran_norm, get_tts, get_gap)
 from hashpy.doublecouple import DoubleCouple
 from obspy.core.utcdatetime import UTCDateTime
 from obspy.core.event import (Catalog, Event, Origin, CreationInfo, Magnitude,
@@ -28,6 +29,96 @@ def _get_pick(arrival, picks, pick_ids):
         else:
             return picks[n]
     return pick
+
+
+def inputOBSPY_COMPOSITE(hp, catalog):
+    """
+    Load an entire catalog into HASH to compute a consensus mechanism
+    which just assumes a median location from the catalog
+    :param hp:
+    :param catalog:
+    :return:
+    """
+    DEFAULT_UNCERT = 100.
+    k = 0
+    hp.p_index = []
+    _m = catalog[0].preferred_magnitude() # Just take the first one
+    icusp = 'Consensus'
+    _pids = [p.resource_id for event in catalog for p in event.picks]
+    hp.tstamp = catalog[0].preferred_origin().time.timestamp
+    hp.qlat = np.median([ev.preferred_origin().latitude
+                         for ev in catalog])
+    hp.qlon = np.median([ev.preferred_origin().longitude
+                         for ev in catalog])
+    hp.qdep = np.median([ev.preferred_origin().depth
+                         for ev in catalog]) / 1000.
+    hp.icusp = icusp
+    hp.seh = DEFAULT_UNCERT
+    hp.seh /= 1000.
+    hp.sez = 0.1
+    if _m:
+        hp.qmag = _m.mag
+    for event in catalog:
+        _o = event.preferred_origin()
+        # The index 'k' is deliberately non-Pythonic to deal with the fortran
+        # subroutines which need to be called and the structure of the original
+        # HASH code.
+        # May be able to update with a rewrite... YMMV
+        for _i, arrv in enumerate(_o.arrivals):
+            pick = _get_pick(arrv, event.picks, _pids)
+            if pick is None:
+                continue
+            try:
+                hp.dist[k] = arrv.distance * 111.2
+            except TypeError:
+                print('No distance populated for this arrival...')
+                continue
+            hp.sname[k] = pick.waveform_id.station_code
+            hp.snet[k] = pick.waveform_id.network_code
+            hp.scomp[k] = pick.waveform_id.channel_code
+            hp.qazi[k] = arrv.azimuth
+            if (hp.qazi[k] < 0.):
+                hp.qazi[k] += 360.
+            if (hp.dist[k] > hp.delmax):
+                continue
+            if arrv.phase not in 'Pp':
+                continue
+            if (pick.polarity is 'positive'):
+                hp.p_pol[k] = 1
+            elif (pick.polarity is 'negative'):
+                hp.p_pol[k] = -1
+            else:
+                continue
+            if (pick.onset is 'impulsive'):
+                hp.p_qual[k] = 0
+            elif (pick.onset is 'emergent'):
+                hp.p_qual[k] = 1
+            elif (pick.onset is 'questionable'):
+                hp.p_qual[k] = 1
+            else:
+                hp.p_qual[k] = 0
+            # Perturb orig and calc TOAs each origin instead of
+            # for a median event
+            for nm in range(1, hp.nmc):
+                val = ran_norm()
+                # randomly perturbed source depth
+                hp.qdep2[nm] = abs(hp.qdep + hp.sez * val)
+                # index used to choose velocity model
+                hp.index[nm] = (nm % hp.ntab) + 1
+                hp.p_azi_mc[k, nm] = hp.qazi[k]
+                hp.p_the_mc[k, nm], iflag = get_tts(hp.index[nm],
+                                                      hp.dist[k],
+                                                      hp.qdep2[nm])
+            # polarity check in original code... doesn't work here
+            # hp.p_pol[k] = hp.p_pol[k] * hp.spol
+            hp.p_index.append(k)  # indicies of [arrivals] which passed
+            k += 1
+    hp.npol = k  # k is zero indexed in THIS loop
+    # Calc max/min gap at end
+    hp.magap, hp.mpgap = get_gap(hp.p_azi_mc[:hp.npol, 0],
+                                 hp.p_the_mc[:hp.npol, 0],
+                                 hp.npol)
+    return
 
 
 def inputOBSPY_CONSENSUS(hp, catalog):

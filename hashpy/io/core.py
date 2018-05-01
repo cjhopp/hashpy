@@ -24,7 +24,9 @@ IO_REGISTRY = {"OBSPY" : { 'module': "hashpy.io.obspyIO",
                "OBSPY_CONSENSUS": {'module': "hashpy.io.obspyIO",
                                    'input': "inputOBSPY_CONSENSUS",
                                    'output': "outputOBSPY"},
-
+               "OBSPY_COMPOSITE": {'module': "hashpy.io.obspyIO",
+                                   'input': "inputOBSPY_COMPOSITE",
+                                   'output': "outputOBSPY"},
                "ANTELOPE" : {'module': "hashpy.io.antelopeIO"},
                 
                "FPFIT" : {'module': "hashpy.io.fpfitIO"},
