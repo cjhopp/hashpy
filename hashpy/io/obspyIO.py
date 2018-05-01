@@ -54,9 +54,7 @@ def inputOBSPY_CONSENSUS(hp, catalog):
     hp.icusp = icusp
     hp.seh = DEFAULT_UNCERT
     hp.seh /= 1000.
-    hp.sez = np.median([ev.preferred_origin().depth_errors.get('uncertainty',
-                                                               DEFAULT_UNCERT)
-                        for ev in catalog]) / 1000.
+    hp.sez = 0.1
     if _m:
         hp.qmag = _m.mag
     for event in catalog:
