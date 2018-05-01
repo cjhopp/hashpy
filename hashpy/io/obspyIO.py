@@ -67,12 +67,15 @@ def inputOBSPY_CONSENSUS(hp, catalog):
             pick = _get_pick(arrv, event.picks, _pids)
             if pick is None:
                 continue
+            try:
+                hp.dist[k] = arrv.distance * 111.2
+            except TypeError:
+                print('No distance populated for this arrival...')
+                continue
             hp.sname[k] = pick.waveform_id.station_code
             hp.snet[k] = pick.waveform_id.network_code
             hp.scomp[k] = pick.waveform_id.channel_code
             hp.qazi[k] = arrv.azimuth
-            hp.dist[k] = arrv.distance * 111.2
-            # TODO Populate toas and magap, mpgap
             if (hp.qazi[k] < 0.):
                 hp.qazi[k] += 360.
             if (hp.dist[k] > hp.delmax):
