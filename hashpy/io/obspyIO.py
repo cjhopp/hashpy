@@ -98,7 +98,7 @@ def inputOBSPY_CONSENSUS(hp, catalog):
                 hp.p_qual[k] = 0
             # polarity check in original code... doesn't work here
             # hp.p_pol[k] = hp.p_pol[k] * hp.spol
-            hp.p_index.append(_i)  # indicies of [arrivals] which passed
+            hp.p_index.append(k)  # indicies of [arrivals] which passed
             k += 1
     hp.npol = k  # k is zero indexed in THIS loop
     return
