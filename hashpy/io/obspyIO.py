@@ -30,7 +30,7 @@ def _get_pick(arrival, picks, pick_ids):
     return pick
 
 
-def inputOBSPY_CONSENSUS(hp, catalog, icusp):
+def inputOBSPY_CONSENSUS(hp, catalog):
     """
     Load an entire catalog into HASH to compute a consensus mechanism
     which just assumes a median location from the catalog
