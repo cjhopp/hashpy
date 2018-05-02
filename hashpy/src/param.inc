@@ -1,4 +1,4 @@
 ! npick0 = maximum number of picks per event
 ! nmc0 = maximum number of trials of location/take-off angles
 ! nmax0 = maximum number of acceptable mechanisms output
-      parameter (npick0=6000,nmc0=500,nmax0=500) 
+      parameter (npick0=10000,nmc0=500,nmax0=500) 
