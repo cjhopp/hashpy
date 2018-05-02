@@ -45,12 +45,12 @@ def inputOBSPY_COMPOSITE(hp, catalog):
     _m = catalog[0].preferred_magnitude() # Just take the first one
     icusp = 'Composite'
     hp.tstamp = catalog[0].preferred_origin().time.timestamp
-    # hp.qlat = np.median([ev.preferred_origin().latitude
-    #                      for ev in catalog])
-    # hp.qlon = np.median([ev.preferred_origin().longitude
-    #                      for ev in catalog])
-    # hp.qdep = np.median([ev.preferred_origin().depth
-    #                      for ev in catalog]) / 1000.
+    hp.qlat = np.median([ev.preferred_origin().latitude
+                         for ev in catalog])
+    hp.qlon = np.median([ev.preferred_origin().longitude
+                         for ev in catalog])
+    hp.qdep = np.median([ev.preferred_origin().depth
+                         for ev in catalog]) / 1000.
     hp.icusp = icusp
     hp.seh = DEFAULT_UNCERT
     hp.seh /= 1000.
@@ -98,7 +98,7 @@ def inputOBSPY_COMPOSITE(hp, catalog):
                 hp.p_qual[k] = 1
             else:
                 hp.p_qual[k] = 0
-            # Perturb orig and calc TOAs each origin instead of
+            # Perturb origin and calc TOAs each origin instead of
             # for a median event
             for nm in range(1, hp.nmc):
                 val = ran_norm()
